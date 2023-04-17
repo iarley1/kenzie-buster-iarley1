@@ -23,3 +23,22 @@ class Movie(models.Model):
         related_name="movies",
         null=True,
     )
+    order = models.ManyToManyField(
+        "users.User",
+        through="movies.MovieOrder",
+        related_name="order_movies"
+    )
+
+class MovieOrder(models.Model):
+    buyed_at = models.DateTimeField(auto_now_add=True)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        related_name="movies_order"
+    )
+    movie = models.ForeignKey(
+        "movies.Movie",
+        on_delete=models.CASCADE,
+        related_name="user_order"
+    )

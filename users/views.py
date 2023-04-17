@@ -3,6 +3,7 @@ from .serializers import UserSerializer, LoginSerializer
 from .models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import get_object_or_404  
 
 
 class UsersView(APIView):
@@ -14,6 +15,18 @@ class UsersView(APIView):
         serializer.save()
 
         return Response(serializer.data, status.HTTP_201_CREATED)
+    
+class UsersDetailView(APIView):
+    def patch(self, req: Request, user_id: int) -> Response:
+        user = get_object_or_404(User, id=user_id)
+
+        serializer = UserSerializer(instance=user, data=req.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()
+
+        return Response("deu")
 
 class LoginView(APIView):
     def post(self, req: Request) -> Response:

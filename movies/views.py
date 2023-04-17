@@ -1,22 +1,15 @@
 from django.shortcuts import render
 from rest_framework.views import APIView, Response, Request, status
 from .models import Movie
-from .serializers import MovieSerializer
-from rest_framework import permissions
+from .serializers import MovieSerializer, MovieOrderSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.shortcuts import get_object_or_404
-
-class CustomPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        
-        return(request.user.is_authenticated and request.user.is_superuser)
+from .permission import IsSuperUser, IsAuthenticated
+from django.shortcuts import get_object_or_404    
 
 
 class MoviesView(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [CustomPermission]
+    permission_classes = [IsSuperUser]
 
     def post(self, req: Request) -> Response:
         serializer = MovieSerializer(data=req.data)
@@ -45,7 +38,7 @@ class MoviesView(APIView):
     
 class MovieDetailView(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [CustomPermission]
+    permission_classes = [IsSuperUser]
 
     def get(self, req: Request, movie_id: int) -> Response:
         movie = get_object_or_404(Movie, id=movie_id)
@@ -73,3 +66,26 @@ class MovieDetailView(APIView):
         movie.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class MovieOrderView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, req: Request, movie_id: int) -> Response:
+        movie = get_object_or_404(Movie, id=movie_id)
+
+        serializer = MovieOrderSerializer(data=req.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save(user=req.user, movie=movie)
+
+        data = {
+            "id": serializer.data["id"],
+            "title": movie.title,
+            "buyed_at": serializer.data["buyed_at"],
+            "price": serializer.data["price"],
+            "buyed_by": req.user.email
+        }
+
+        return Response(data, status.HTTP_201_CREATED)
